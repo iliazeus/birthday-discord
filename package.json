@@ -1,0 +1,31 @@
+{
+  "private": true,
+  "name": "birthday-discord",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "./scripts/build.sh",
+    "start": "node ./dist/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iliazeus/birthday-discord.git"
+  },
+  "author": "Ilia Pozdnyakov <ilia.pozdnyakov@ya.ru>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/iliazeus/birthday-discord/issues"
+  },
+  "homepage": "https://github.com/iliazeus/birthday-discord#readme",
+  "devDependencies": {
+    "@types/node": "^18.15.10",
+    "esbuild": "^0.17.14",
+    "prettier": "^2.8.7",
+    "typescript": "^5.0.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "source-map-support": "^0.5.21"
+  }
+}
