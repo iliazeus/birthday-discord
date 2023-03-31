@@ -1,4 +1,4 @@
-import { AppCommand } from "./app";
+import { AppButton, AppCommand } from "../app";
 
 import * as fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
@@ -9,7 +9,7 @@ import shuffle from "lodash.shuffle";
 import * as discord from "discord.js";
 import { Collection } from "discord.js";
 
-export interface GameOptions {
+export interface SlideGameOptions {
   imageDir: string;
 }
 
@@ -19,14 +19,14 @@ function shuffleCollection<K, V>(coll: Collection<K, V>): void {
   for (const [k, v] of entries) coll.set(k, v);
 }
 
-export class Game {
-  static async create(options: Readonly<GameOptions>): Promise<Game> {
-    const game = new Game(options);
+export class SlideGame {
+  static async create(options: Readonly<SlideGameOptions>): Promise<SlideGame> {
+    const game = new SlideGame(options);
     await game.reset();
     return game;
   }
 
-  private constructor(readonly options: Readonly<GameOptions>) {}
+  private constructor(readonly options: Readonly<SlideGameOptions>) {}
 
   private _topics = new Collection<string, string>();
   private _topicIndex = 0;
@@ -128,57 +128,33 @@ export class Game {
     } while (!channelPeople.has(this.person.id));
   }
 
-  readonly commands: AppCommand[] = [
-    {
-      command: (c) =>
-        c
-          .setName("game-set-timer")
-          .setDescription("set game timer")
-          .addIntegerOption((o) =>
-            o
-              .setName("seconds")
-              .setRequired(true)
-              .setMinValue(0)
-              .setMaxValue(300)
-              .setDescription("0 disables timer")
-          ),
-      action: async (int) => {
-        const seconds = int.options.getInteger("seconds", true);
-        await this.setTimerDuration(seconds);
-        if (seconds) await int.reply(`Timer duration is set to ${seconds} seconds.`);
-        else await int.reply(`Timer is disabled.`);
-      },
-    },
-    {
-      command: (c) => c.setName("game-next-topic").setDescription("next topic"),
-      action: async (int) => {
-        this._abortTimer();
+  private _nextSlideAction = async (
+    int: discord.ChatInputCommandInteraction | discord.ButtonInteraction
+  ) => {
+    this._abortTimer();
 
-        await this.nextTopic();
-        await int.reply(`Game topic is: ${this.topic}`);
-      },
-    },
-    {
-      command: (c) => c.setName("game-next-image").setDescription("get next image"),
-      action: async (int) => {
-        this._abortTimer();
+    await this.nextImage(int.channel!);
 
-        await this.nextImage(int.channel!);
+    await int.reply({
+      content: `${this.person.user}\nGame topic is: ${this.topic}`,
+      files: [createReadStream(this.image)],
+      components: [
+        new discord.ActionRowBuilder<discord.ButtonBuilder>().addComponents(
+          new discord.ButtonBuilder()
+            .setCustomId("slide-next")
+            .setStyle(discord.ButtonStyle.Primary)
+            .setLabel("Next Slide")
+        ),
+      ],
+    });
 
-        await int.reply({
-          content: `${this.person.user}\nGame topic is: ${this.topic}`,
-          files: [createReadStream(this.image)],
-        });
-
-        if (this._timerSeconds) {
-          await this._followUpWithTimer(int, this._timerSeconds, this._timerAbortController.signal);
-        }
-      },
-    },
-  ];
+    if (this._timerSeconds) {
+      await this._followUpWithTimer(int, this._timerSeconds, this._timerAbortController.signal);
+    }
+  };
 
   private async _followUpWithTimer(
-    int: discord.ChatInputCommandInteraction,
+    int: discord.ChatInputCommandInteraction | discord.ButtonInteraction,
     seconds: number,
     abort: AbortSignal
   ): Promise<void> {
@@ -202,4 +178,47 @@ export class Game {
       await timerMsg.edit(text());
     }, 1000);
   }
+
+  readonly commands: AppCommand[] = [
+    {
+      command: (c) =>
+        c
+          .setName("slide-timer")
+          .setDescription("set slide timer")
+          .addIntegerOption((o) =>
+            o
+              .setName("seconds")
+              .setRequired(true)
+              .setMinValue(0)
+              .setMaxValue(300)
+              .setDescription("0 disables timer")
+          ),
+      action: async (int) => {
+        const seconds = int.options.getInteger("seconds", true);
+        await this.setTimerDuration(seconds);
+        if (seconds) await int.reply(`Timer duration is set to ${seconds} seconds.`);
+        else await int.reply(`Timer is disabled.`);
+      },
+    },
+    {
+      command: (c) => c.setName("slide-topic").setDescription("next topic"),
+      action: async (int) => {
+        this._abortTimer();
+
+        await this.nextTopic();
+        await int.reply(`Game topic is: ${this.topic}`);
+      },
+    },
+    {
+      command: (c) => c.setName("slide-next").setDescription("get next image"),
+      action: this._nextSlideAction,
+    },
+  ];
+
+  readonly buttons: AppButton[] = [
+    {
+      id: "slide-next",
+      action: this._nextSlideAction,
+    },
+  ];
 }

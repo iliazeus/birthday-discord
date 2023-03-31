@@ -4,22 +4,29 @@ import packageJson from "../package.json";
 
 import process from "process";
 import { program } from "commander";
+
 import { App } from "./app";
-import { Game } from "./game";
+import { SlideGame } from "./modules/slide-game";
+import { ChameleonGame } from "./modules/chameleon-game";
 
 program
   .name(packageJson.name)
   .version(packageJson.version)
   .option("-r --register-commands")
   .action(async (options: { registerCommands?: boolean }) => {
-    const game = await Game.create({
-      imageDir: process.env.IMAGE_DIR!,
+    const slideGame = await SlideGame.create({
+      imageDir: process.env.SLIDE_GAME_IMAGE_DIR!,
+    });
+
+    const chameleonGame = new ChameleonGame({
+      cardFile: process.env.CHAMELEON_GAME_CARD_FILE!,
     });
 
     const app = new App({
       discordAppId: process.env.DISCORD_APP_ID!,
       discordBotToken: process.env.DISCORD_BOT_TOKEN!,
-      commands: [...game.commands],
+      commands: [...slideGame.commands, ...chameleonGame.commands],
+      buttons: [...slideGame.buttons, ...chameleonGame.buttons],
     });
 
     app.on("error", (e) => console.warn(e));
