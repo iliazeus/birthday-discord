@@ -5,29 +5,26 @@ import packageJson from "../package.json";
 import process from "process";
 import { program } from "commander";
 import { App } from "./app";
-
-const app = new App({
-  discordAppId: process.env.DISCORD_APP_ID!,
-  discordBotToken: process.env.DISCORD_BOT_TOKEN!,
-  commands: [
-    {
-      command: (c) => c.setName("ping").setDescription("ping"),
-      action: async (int) => {
-        if (!int.isRepliable()) return;
-        await int.reply("pong");
-      },
-    },
-  ],
-});
-
-app.on("error", (e) => console.warn(e));
-app.on("command", (name) => console.log(`executing command ${name}`));
+import { Game } from "./game";
 
 program
   .name(packageJson.name)
   .version(packageJson.version)
   .option("-r --register-commands")
   .action(async (options: { registerCommands?: boolean }) => {
+    const game = await Game.create({
+      imageDir: process.env.IMAGE_DIR!,
+    });
+
+    const app = new App({
+      discordAppId: process.env.DISCORD_APP_ID!,
+      discordBotToken: process.env.DISCORD_BOT_TOKEN!,
+      commands: [...game.commands],
+    });
+
+    app.on("error", (e) => console.warn(e));
+    app.on("command", (name) => console.log(`executing command ${name}`));
+
     if (options.registerCommands) {
       console.log("registering commands");
       await app.registerCommands();

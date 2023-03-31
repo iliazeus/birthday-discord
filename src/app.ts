@@ -9,13 +9,13 @@ export interface AppOptions {
 }
 
 export interface AppCommand {
-  command(builder: discord.SlashCommandBuilder): discord.SlashCommandBuilder;
-  action(interaction: discord.Interaction, app: App): Promise<void>;
+  command(builder: discord.SlashCommandBuilder): void;
+  action(interaction: discord.ChatInputCommandInteraction, app: App): Promise<void>;
 }
 
 interface RegisteredAppCommand {
   command: ReturnType<discord.SlashCommandBuilder["toJSON"]>;
-  action: (interaction: discord.Interaction, app: App) => Promise<void>;
+  action: (interaction: discord.ChatInputCommandInteraction, app: App) => Promise<void>;
 }
 
 export class App extends EventEmitter<{
@@ -23,7 +23,11 @@ export class App extends EventEmitter<{
   command: [name: string];
 }> {
   readonly discordClient = new discord.Client({
-    intents: [discord.GatewayIntentBits.Guilds],
+    intents: [
+      discord.GatewayIntentBits.Guilds,
+      discord.GatewayIntentBits.GuildMembers,
+      discord.GatewayIntentBits.GuildPresences,
+    ],
   });
 
   get inviteLink(): string {
@@ -94,7 +98,7 @@ export class App extends EventEmitter<{
   private _dispatchCommand = async (interaction: discord.Interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
-  
+
       const command = this._registeredCommandsByName.get(interaction.commandName);
       if (!command) throw new Error(`command not found: ${interaction.commandName}`);
 
