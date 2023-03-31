@@ -37,10 +37,15 @@ export class Game {
   private _people = new Collection<string, discord.GuildMember>();
   private _personIndex = 0;
 
+  private _timerSeconds: number = 30;
   private _timerAbortController = new AbortController();
   private _abortTimer(): void {
     this._timerAbortController.abort();
     this._timerAbortController = new AbortController();
+  }
+
+  async setTimerDuration(seconds: number): Promise<void> {
+    this._timerSeconds = seconds;
   }
 
   async reset(): Promise<void> {
@@ -125,6 +130,26 @@ export class Game {
 
   readonly commands: AppCommand[] = [
     {
+      command: (c) =>
+        c
+          .setName("game-set-timer")
+          .setDescription("set game timer")
+          .addIntegerOption((o) =>
+            o
+              .setName("seconds")
+              .setRequired(true)
+              .setMinValue(0)
+              .setMaxValue(300)
+              .setDescription("0 disables timer")
+          ),
+      action: async (int) => {
+        const seconds = int.options.getInteger("seconds", true);
+        await this.setTimerDuration(seconds);
+        if (seconds) await int.reply(`Timer duration is set to ${seconds} seconds.`);
+        else await int.reply(`Timer is disabled.`);
+      },
+    },
+    {
       command: (c) => c.setName("game-next-topic").setDescription("next topic"),
       action: async (int) => {
         this._abortTimer();
@@ -145,7 +170,9 @@ export class Game {
           files: [createReadStream(this.image)],
         });
 
-        await this._followUpWithTimer(int, 30, this._timerAbortController.signal);
+        if (this._timerSeconds) {
+          await this._followUpWithTimer(int, this._timerSeconds, this._timerAbortController.signal);
+        }
       },
     },
   ];
