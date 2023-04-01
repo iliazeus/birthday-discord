@@ -103,10 +103,12 @@ export class SlideGame {
       throw new Error("not a text channel");
     }
 
-    const channelPeople = channel.members.filter((m) => !m.user.bot);
+    const channelPeople = channel.members
+      .filter((m) => !m.user.bot)
+      .filter((m) => m.presence?.status === "online");
 
     if (channelPeople.size === 0) {
-      throw new Error("no people in channel");
+      throw new Error("no people online in channel");
     }
 
     if (this._images.size === 0) await this.nextTopic();

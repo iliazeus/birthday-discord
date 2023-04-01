@@ -57,8 +57,10 @@ export class ChameleonGame {
   }
 
   async start(members: Collection<string, discord.GuildMember>): Promise<void> {
-    const people = members.filter((m) => !m.user.bot);
-    if (people.size <= 1) throw new Error("too few people to start");
+    const people = members
+      .filter((m) => !m.user.bot)
+      .filter((m) => m.presence?.status === "online");
+    if (people.size <= 1) throw new Error("too few people online to start");
 
     const cards = await this._parseCards();
 
