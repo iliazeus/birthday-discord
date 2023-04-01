@@ -107,8 +107,10 @@ export class ChameleonGame {
 
     await this.start(channel.members);
 
+    const rowCount = Math.trunc(Math.sqrt(this.card.words.length));
+
     await int.reply({
-      content: `**${this.card.topic}**\n` + "```" + table(chunk(this.card.words, 4)) + "```",
+      content: `**${this.card.topic}**\n` + "```" + table(chunk(this.card.words, rowCount)) + "```",
       components: [
         new discord.ActionRowBuilder<discord.ButtonBuilder>().addComponents(
           new discord.ButtonBuilder()
